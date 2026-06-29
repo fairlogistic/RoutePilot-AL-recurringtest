@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RoutePilot Alabama - Recurring Route Manager</title>
+  <link rel="icon" type="image/png" href="image/icon.png"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div class="header">
+  <img src="image/logo2.png" alt="Fair Logistics Logo" class="logo">
+  <h1 class="app-title"><span class="route-text">Route</span><span class="pilot-text">Pilot - Alabama</span></h1>
+</div>
+
+<nav class="top-nav">
+  <a href="index.html">Create Task</a>
+  <a href="recurring.html" class="active">Recurring Orders</a>
+</nav>
+
+<section class="page-intro">
+  <h2>Recurring Route Manager</h2>
+  <p>Create recurring Onfleet order templates, organize stops by weekday and driver, reorder each driver route, and review generated task history.</p>
+</section>
+
+<div id="status-message" class="status-message" style="display:none;"></div>
+
+<section class="card-section dashboard-cards">
+  <div class="metric-card"><span id="metric-active">0</span><label>Active Recurring Stops</label></div>
+  <div class="metric-card"><span id="metric-paused">0</span><label>Paused Stops</label></div>
+  <div class="metric-card"><span id="metric-drivers">0</span><label>Drivers</label></div>
+  <div class="metric-card"><span id="metric-today">0</span><label>Stops Today</label></div>
+</section>
+
+<section class="card-section">
+  <div class="section-header-row">
+    <h3>Create / Edit Recurring Stop</h3>
+    <button type="button" id="clear-form-btn" class="secondary-btn">New Blank Stop</button>
+  </div>
+
+  <form id="recurring-form">
+    <div class="form-grid three-col">
+      <div>
+        <label for="recurrence-name">Stop Name <span class="required">*</span></label>
+        <input type="text" id="recurrence-name" placeholder="Example: UAB Morning Pickup" required>
+      </div>
+      <div>
+        <label for="active-status">Status</label>
+        <select id="active-status">
+          <option value="true">Active</option>
+          <option value="false">Paused</option>
+        </select>
+      </div>
+      <div>
+        <label for="route-name">Route Name</label>
+        <input type="text" id="route-name" placeholder="Example: Monday AM Route">
+      </div>
+    </div>
+
+    <div class="form-grid two-col">
+      <div>
+        <label for="hospital-name">Hospital / Location <span class="required">*</span></label>
+        <input type="text" id="hospital-name" list="hospital-name-list" placeholder="Type or select hospital" required>
+        <datalist id="hospital-name-list"></datalist>
+      </div>
+      <div>
+        <label for="destination-address">Destination Address <span class="required">*</span></label>
+        <input type="text" id="destination-address" list="destination-address-list" placeholder="Type or select address" required>
+        <datalist id="destination-address-list"></datalist>
+      </div>
+    </div>
+
+    <div class="form-grid three-col">
+      <div>
+        <label for="recipient-name">Recipient Name</label>
+        <input type="text" id="recipient-name" placeholder="Recipient / department">
+      </div>
+      <div>
+        <label for="recipient-phone">Recipient Phone</label>
+        <input type="text" id="recipient-phone" placeholder="Phone number">
+      </div>
+      <div>
+        <label for="sales-team">Sales Team</label>
+        <select id="sales-team">
+          <option value="">Select Team</option>
+          <option value="Austin">Austin</option>
+          <option value="Houston">Houston</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid three-col">
+      <div>
+        <label for="driver-team">Driver Team</label>
+        <select id="driver-team"><option value="">Select Driver Team</option></select>
+      </div>
+      <div>
+        <label for="driver-input">Driver <span class="required">*</span></label>
+        <input type="text" id="driver-input" list="driver-list" placeholder="Search or type driver" required>
+        <datalist id="driver-list"></datalist>
+      </div>
+      <div>
+        <label for="stop-sequence">Stop Order <span class="required">*</span></label>
+        <input type="number" id="stop-sequence" min="1" value="1" required>
+      </div>
+    </div>
+
+    <fieldset class="fieldset-card">
+      <legend>Recurring Schedule</legend>
+      <div class="form-grid three-col">
+        <div>
+          <label for="recurrence-type">Frequency <span class="required">*</span></label>
+          <select id="recurrence-type" required>
+            <option value="weekly">Weekly</option>
+            <option value="daily">Daily</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+        <div>
+          <label for="start-date">Start Date <span class="required">*</span></label>
+          <input type="date" id="start-date" required>
+        </div>
+        <div>
+          <label for="end-date">End Date</label>
+          <input type="date" id="end-date">
+        </div>
+      </div>
+
+      <div id="weekly-days-block">
+        <label>Run On</label>
+        <div class="weekday-row">
+          <label><input type="checkbox" name="weekday" value="MO"> Mon</label>
+          <label><input type="checkbox" name="weekday" value="TU"> Tue</label>
+          <label><input type="checkbox" name="weekday" value="WE"> Wed</label>
+          <label><input type="checkbox" name="weekday" value="TH"> Thu</label>
+          <label><input type="checkbox" name="weekday" value="FR"> Fri</label>
+          <label><input type="checkbox" name="weekday" value="SA"> Sat</label>
+          <label><input type="checkbox" name="weekday" value="SU"> Sun</label>
+        </div>
+      </div>
+      <div id="monthly-day-block" style="display:none;">
+        <label for="monthly-day">Day of Month</label>
+        <input type="number" id="monthly-day" min="1" max="31" placeholder="Example: 15">
+      </div>
+    </fieldset>
+
+    <fieldset class="fieldset-card">
+      <legend>Task Details</legend>
+      <div class="form-grid three-col">
+        <div>
+          <label for="task-type">Pickup or Dropoff</label>
+          <select id="task-type"><option value="pickup">Pickup</option><option value="dropoff">Dropoff</option></select>
+        </div>
+        <div>
+          <label for="complete-after">Complete After</label>
+          <input type="time" id="complete-after">
+        </div>
+        <div>
+          <label for="complete-before">Complete Before</label>
+          <input type="time" id="complete-before">
+        </div>
+      </div>
+      <label for="task-detail">Task Notes / Details</label>
+      <textarea id="task-detail" rows="3" placeholder="Recurring task notes or special instructions"></textarea>
+      <label for="sales-notes">Sales Notes / Emails</label>
+      <textarea id="sales-notes" rows="2" placeholder="Emails auto-fill when sales team is selected"></textarea>
+      <div class="checkbox-row">
+        <label><input type="checkbox" id="opt-addon"> Addon</label>
+        <label><input type="checkbox" id="opt-scheduled"> Scheduled</label>
+        <label><input type="checkbox" id="opt-statRun"> Stat Run</label>
+        <label><input type="checkbox" id="opt-supplies"> Supplies</label>
+      </div>
+    </fieldset>
+
+    <div class="button-row">
+      <button type="submit" id="save-recurring-btn" class="primary-btn">Save Recurring Stop</button>
+      <button type="button" id="preview-payload-btn" class="secondary-btn">Preview API Payload</button>
+    </div>
+  </form>
+</section>
+
+<section class="card-section">
+  <div class="section-header-row">
+    <h3>Import Weekly Route Templates</h3>
+    <button type="button" id="download-template-btn" class="secondary-btn">Download CSV Template</button>
+  </div>
+  <p class="small-note">Use this for Monday Route.xlsx / Tuesday Route.xlsx style data. The frontend prepares the import; the backend should parse Excel/CSV and save recurring templates.</p>
+  <div class="form-grid two-col">
+    <div>
+      <label for="import-weekday">Template Weekday</label>
+      <select id="import-weekday"><option value="MO">Monday</option><option value="TU">Tuesday</option><option value="WE">Wednesday</option><option value="TH">Thursday</option><option value="FR">Friday</option><option value="SA">Saturday</option><option value="SU">Sunday</option></select>
+    </div>
+    <div>
+      <label for="route-file">Route File</label>
+      <input type="file" id="route-file" accept=".xlsx,.xls,.csv">
+    </div>
+  </div>
+  <div class="checkbox-row">
+    <label><input type="checkbox" id="use-row-order" checked> Use Excel row order as driver stop order when Stop_Order is missing</label>
+    <label><input type="checkbox" id="only-scheduled" checked> Import only rows where Scheduled is TRUE / YES / 1</label>
+  </div>
+  <div class="button-row">
+    <button type="button" id="preview-route-btn" class="secondary-btn">Preview File</button>
+    <button type="button" id="upload-route-btn" class="primary-btn">Import Previewed Stops</button>
+  </div>
+  <div id="import-summary" class="small-note"></div>
+  <div class="table-wrap" id="import-preview-wrap" style="display:none;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Weekday</th><th>Driver</th><th>Quantity / Route</th><th>Stop Order</th><th>Recipient</th><th>Phone</th><th>Address</th><th>Team</th><th>Scheduled</th><th>Pickup</th>
+        </tr>
+      </thead>
+      <tbody id="import-preview-body"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card-section">
+  <div class="section-header-row">
+    <h3>Driver Route Sequence Manager</h3>
+    <button type="button" id="refresh-orders-btn" class="secondary-btn">Refresh</button>
+  </div>
+  <div class="filter-row">
+    <select id="weekday-filter"><option value="all">All Weekdays</option><option value="MO">Monday</option><option value="TU">Tuesday</option><option value="WE">Wednesday</option><option value="TH">Thursday</option><option value="FR">Friday</option><option value="SA">Saturday</option><option value="SU">Sunday</option></select>
+    <select id="driver-filter"><option value="all">All Drivers</option></select>
+    <select id="status-filter"><option value="all">All Statuses</option><option value="active">Active</option><option value="paused">Paused</option></select>
+    <input type="text" id="order-search" placeholder="Search stop, hospital, address, route, driver">
+  </div>
+  <div id="route-sequence-board" class="route-board"></div>
+</section>
+
+<section class="card-section">
+  <h3>Flat Recurring Order Table</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Day</th><th>Driver</th><th>Order</th><th>Stop</th><th>Time Window</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="recurring-orders-body"><tr><td colspan="7" class="empty-cell">No recurring orders loaded yet.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card-section">
+  <h3>Generated Task History</h3>
+  <p class="small-note">Shows tasks created by backend scheduler after GET /api/recurring-orders-AL/history is added.</p>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Driver</th><th>Recurring Stop</th><th>Onfleet Short ID</th><th>Status</th><th>Error</th></tr></thead>
+      <tbody id="generated-history-body"><tr><td colspan="6" class="empty-cell">No generated task history loaded yet.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<div id="payload-modal" class="modal-backdrop" style="display:none;">
+  <div class="modal-card">
+    <div class="section-header-row"><h3>API Payload Preview</h3><button type="button" id="close-modal-btn" class="secondary-btn">Close</button></div>
+    <pre id="payload-preview"></pre>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="recurring.js"></script>
+</body>
+</html>

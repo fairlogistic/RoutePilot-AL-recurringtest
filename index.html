@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fair Dispatching Alabama</title>
+  <link rel="icon" type="image/png" href="image/icon.png"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div class="header">
+  <img src="image/logo2.png" alt="Fair Logistics Logo" class="logo">
+  <h1 class="app-title"><span class="route-text">Route</span><span class="pilot-text">Pilot - Alabama</span></h1>
+</div>
+
+<nav class="top-nav">
+  <a href="index.html" class="active">Create Task</a>
+  <a href="recurring.html">Recurring Orders</a>
+</nav>
+
+<!-- ---------------- SALES TEAM (ALABAMA) ---------------- -->
+<label for="al-sales-team">Sales Team (Optional)</label>
+<select id="al-sales-team" style="padding:8px;">
+  <option value="">Select Team</option>
+  <option value="Austin">Austin</option>
+  <option value="Houston">Houston</option>
+</select>
+
+<label for="al-sales-notes">Sales Notes (Auto-filled, Read Only)</label>
+<textarea id="al-sales-notes" rows="3" placeholder="Emails will auto-fill here" readonly></textarea>
+
+
+<!-- ---------------- HOSPITAL ---------------- -->
+<label for="hospital-name">Hospital Name <span style="color:red">*</span></label>
+<input type="text" id="hospital-name" list="hospital-name-list" placeholder="Type or select hospital">
+<datalist id="hospital-name-list"></datalist>
+
+<label for="destination-address">Destination Address <span style="color:red">*</span></label>
+<input type="text" id="destination-address" list="destination-address-list" placeholder="Type or select address">
+<datalist id="destination-address-list"></datalist>
+
+<!-- ---------------- TASK DETAIL ---------------- -->
+<label for="task-detail">Task Detail (Optional)</label>
+<textarea id="task-detail" rows="3" placeholder="Enter additional task information (optional)"></textarea>
+
+<label>Pickup or Dropoff</label>
+<div class="toggle-group">
+  <label><input type="radio" name="taskType" value="pickup" checked> Pickup</label>
+  <label><input type="radio" name="taskType" value="dropoff"> Dropoff</label>
+</div>
+
+<!-- ---------------- TASK OPTIONS ---------------- -->
+<fieldset style="margin:10px 0; padding:10px; border:1px solid #ddd; border-radius:8px;">
+  <legend style="padding:0 6px;">Task Options</legend>
+  <label style="margin-right:16px;"><input type="checkbox" id="opt-addon"> Addon</label>
+  <label style="margin-right:16px;"><input type="checkbox" id="opt-scheduled"> Scheduled</label>
+  <label style="margin-right:16px;"><input type="checkbox" id="opt-statRun"> Stat Run</label>
+  <label style="margin-right:16px;"><input type="checkbox" id="opt-supplies"> Supplies</label>
+</fieldset>
+
+<!-- Case entries disabled -->
+<div id="case-entries-container" style="display:none;"></div>
+<button type="button" id="add-case-btn" style="display:none;">➕ Add Entry</button>
+
+<!-- ---------------- DRIVER TEAM ---------------- -->
+<label for="driver-team">Driver Team & Driver <span style="color:red">*</span></label>
+
+<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+  <select id="driver-team" style="flex:1; min-width:160px;">
+    <option value="">Select Driver Team</option>
+  </select>
+
+  <input type="text" id="driver-input" list="driver-list" placeholder="Search or select driver..."
+         style="flex:1; min-width:200px; padding:8px;">
+  <datalist id="driver-list"></datalist>
+</div>
+
+<!-- ---------------- ACTION BUTTONS ---------------- -->
+<div class="button-row">
+  <button type="button" id="submit-btn" class="primary-btn">Create Task via API</button>
+</div>
+
+<div class="button-row secondary-buttons">
+  <button type="button" id="reset-btn" class="secondary-btn">Reset Form</button>
+  <button type="button" id="help-btn" class="secondary-btn">❓ Help</button>
+  <a href="mailto:analytics@fairorthologistics.com" class="secondary-btn"
+     style="text-decoration:none; display:inline-block; padding:10px 16px;">📧 Contact Support</a>
+</div>
+
+<div id="help-image-container" style="display:none; margin-top:10px; text-align:center;">
+  <img src="image/help_guide.png" alt="Help Guide"
+       style="max-width:100%; border:1px solid #ccc; border-radius:8px;">
+</div>
+
+<script>
+const TEAM_ID = "C*i20rhCL5ZCLjnNDCVeLCzd";
+
+/* ---------------------------------------------------------
+   LOAD HOSPITALS + ADDRESSES
+--------------------------------------------------------- */
+function loadHospitalAndAddress() {
+  const hospitalMap = {};
+  const addressMap = {};
+  const addressToId = {};
+
+  fetch("https://dispatch.azurewebsites.net/api/get_destinations_AL")
+    .then(res => res.json())
+    .then(data => {
+      const hospitals = data.destinations || [];
+      const nameList = document.getElementById("hospital-name-list");
+      const addressList = document.getElementById("destination-address-list");
+
+      hospitals.forEach(item => {
+        const name = item.hospitalName?.trim();
+        const address = item.address?.trim();
+        const addrId = item.addressId ?? item.AddressId ?? item.addressID ?? "";
+
+        if (!name || !address) return;
+
+        hospitalMap[name] = address;
+        addressMap[address] = name;
+        addressToId[address] = addrId;
+
+        nameList.innerHTML += `<option value="${name}"></option>`;
+        addressList.innerHTML += `<option value="${address}"></option>`;
+      });
+
+      window.addressMap = addressMap;
+      window.addressToId = addressToId;
+
+      document.getElementById("hospital-name").addEventListener("change", () => {
+        const name = document.getElementById("hospital-name").value;
+        if (hospitalMap[name]) document.getElementById("destination-address").value = hospitalMap[name];
+      });
+
+      document.getElementById("destination-address").addEventListener("change", () => {
+        const addr = document.getElementById("destination-address").value;
+        if (addressMap[addr]) document.getElementById("hospital-name").value = addressMap[addr];
+      });
+    });
+}
+
+/* ---------------------------------------------------------
+   LOAD DRIVERS
+--------------------------------------------------------- */
+function loadDriverDropdowns() {
+  fetch("https://dispatch.azurewebsites.net/api/get_destinations_AL")
+    .then(res => res.json())
+    .then(data => {
+      const drivers = data.drivers || [];
+      const teamSelect = document.getElementById("driver-team");
+      const datalist = document.getElementById("driver-list");
+      const inputBox = document.getElementById("driver-input");
+
+      const teamToDrivers = {};
+      const teamToId = {};
+
+      drivers.forEach(driver => {
+        const team = driver.team?.trim();
+        const name = driver.name?.trim();
+        const id = driver.id;
+
+        if (!teamToDrivers[team]) teamToDrivers[team] = [];
+        teamToDrivers[team].push({ name, id });
+
+        teamToId[team] = driver.teamId;
+      });
+      teamSelect.innerHTML = `<option value="">Select Driver Team</option>`;
+
+      Object.keys(teamToDrivers).forEach(team => {
+        const opt = document.createElement("option");
+        opt.value = team;
+        opt.textContent = team;
+        teamSelect.appendChild(opt);
+      });
+
+      window.teamToDrivers = teamToDrivers;
+      window.teamToId = teamToId;
+      
+      teamSelect.addEventListener("change", () => {
+        const team = teamSelect.value;
+      
+        datalist.innerHTML = `<option value="ALL (All Team Members)"></option>`;
+      
+        const driversSorted = (teamToDrivers[team] || [])
+          .slice()
+          .sort((a, b) =>
+            (a.name || "").localeCompare((b.name || ""), undefined, { sensitivity: "base" })
+          );
+      
+        driversSorted.forEach(d => {
+          datalist.innerHTML += `<option value="${d.name}" data-id="${d.id}"></option>`;
+        });
+      
+        inputBox.value = "";
+      });
+    }); // closes: .then(data => { ... })
+} // closes: function loadDriverDropdowns()
+
+/* ---------------------------------------------------------
+   SALES TEAM (ALABAMA SIMPLE VERSION)
+--------------------------------------------------------- */
+const salesALContacts = {
+  "Austin": "jallman@streamlinesci.com; tguajardo@streamlinesci.com",
+  "Houston": "jallman@streamlinesci.com"
+};
+
+function loadAlSales() {
+  const teamSelect = document.getElementById("al-sales-team");
+  const notesBox = document.getElementById("al-sales-notes");
+
+  teamSelect.addEventListener("change", () => {
+    const team = teamSelect.value;
+    notesBox.value = salesALContacts[team] || "";
+  });
+}
+
+/* ---------------------------------------------------------
+   SUBMIT TASK
+--------------------------------------------------------- */
+function submitTask() {
+  const submitBtn = document.getElementById("submit-btn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting...";
+
+  const hospitalName = document.getElementById("hospital-name").value.trim();
+  const destinationAddress = document.getElementById("destination-address").value.trim();
+
+  if (!hospitalName || !destinationAddress) {
+    alert("Please select a Hospital Name and Destination Address.");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "Create Task via API";
+    return;
+  }
+
+  const payload = {
+    address: destinationAddress,
+    hospitalName,
+    destinationNotes: window.addressToId?.[destinationAddress] || "",
+    pickupTask: document.querySelector('input[name="taskType"]:checked').value === "pickup",
+    notes: document.getElementById("task-detail").value,
+    addon: document.getElementById("opt-addon").checked,
+    scheduled: document.getElementById("opt-scheduled").checked,
+    statRun: document.getElementById("opt-statRun").checked,
+    supplies: document.getElementById("opt-supplies").checked,
+    team: TEAM_ID
+  };
+
+  /* ----------- SALES TEAM → recipient / recipientNotes ----------- */
+  const selectedTeam = document.getElementById("al-sales-team").value;
+
+  if (selectedTeam) {
+    const emails = document.getElementById("al-sales-notes").value;
+    payload.recipient = selectedTeam;
+    payload.recipientNotes = emails;
+  }
+
+  /* ----------- DRIVER TEAM ASSIGNMENT ----------- */
+  const driverTeam = document.getElementById("driver-team").value;
+  const driverInput = document.getElementById("driver-input").value.trim();
+
+  let assigned = false;
+
+  if (driverInput.toLowerCase().includes("all")) {
+    if (window.teamToId?.[driverTeam]) {
+      payload.team = window.teamToId[driverTeam];
+      assigned = true;
+    }
+  }
+
+  if (!assigned && driverInput) {
+    const match = (window.teamToDrivers[driverTeam] || []).find(
+      d => d.name.toLowerCase() === driverInput.toLowerCase()
+    );
+    if (match) {
+      payload.worker = match.id;
+      assigned = true;
+    }
+  }
+
+  if (!assigned && window.teamToId?.[driverTeam]) {
+    payload.team = window.teamToId[driverTeam];
+  }
+
+  console.log("Payload:", JSON.stringify(payload, null, 2));
+
+  fetch("https://dispatch.azurewebsites.net/api/create_onfleet_task-AL", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+    .then(async res => {
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Task creation failed");
+      alert("✅ Task created successfully!");
+      resetForm();
+    })
+    .catch(err => alert("❌ " + err.message))
+    .finally(() => {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Create Task via API";
+    });
+}
+
+/* ---------------------------------------------------------
+   RESET FORM
+--------------------------------------------------------- */
+function resetForm() {
+  document.getElementById("hospital-name").value = "";
+  document.getElementById("destination-address").value = "";
+  document.getElementById("task-detail").value = "";
+  document.querySelector('input[name="taskType"][value="pickup"]').checked = true;
+  document.getElementById("opt-addon").checked = false;
+  document.getElementById("opt-scheduled").checked = false;
+  document.getElementById("opt-statRun").checked = false;
+  document.getElementById("opt-supplies").checked = false;
+
+  // Reset sales
+  document.getElementById("al-sales-team").selectedIndex = 0;
+  document.getElementById("al-sales-notes").value = "";
+
+  // Reset driver
+  document.getElementById("driver-input").value = "";
+  document.getElementById("driver-list").innerHTML = "";
+  document.getElementById("driver-team").selectedIndex = 0;
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ---------------------------------------------------------
+   PAGE LOAD
+--------------------------------------------------------- */
+document.addEventListener("DOMContentLoaded", () => {
+  loadHospitalAndAddress();
+  loadDriverDropdowns();
+  loadAlSales();  // <<–– SALES TEAM LOGIC ACTIVATED
+
+  document.getElementById("submit-btn").addEventListener("click", submitTask);
+  document.getElementById("reset-btn").addEventListener("click", resetForm);
+  document.getElementById("help-btn").addEventListener("click", () => {
+    const box = document.getElementById("help-image-container");
+    box.style.display = box.style.display === "none" ? "block" : "none";
+  });
+});
+</script>
+
+</body>
+</html>
+
