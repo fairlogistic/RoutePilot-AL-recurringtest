@@ -104,7 +104,7 @@ function loadHospitalAndAddress() {
   const addressMap = {};
   const addressToId = {};
 
-  fetch("https://dispatch.azurewebsites.net/api/get_destinations_AL")
+  fetch("https://dispatch.azurewebsites.net/api/get_destinations_test")
     .then(res => res.json())
     .then(data => {
       const hospitals = data.destinations || [];
@@ -145,7 +145,7 @@ function loadHospitalAndAddress() {
    LOAD DRIVERS
 --------------------------------------------------------- */
 function loadDriverDropdowns() {
-  fetch("https://dispatch.azurewebsites.net/api/get_destinations_AL")
+  fetch("https://dispatch.azurewebsites.net/api/get_destinations_test")
     .then(res => res.json())
     .then(data => {
       const drivers = data.drivers || [];
