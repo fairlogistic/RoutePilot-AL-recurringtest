@@ -1,5 +1,5 @@
-const API_BASE_URL = "https://dispatch.azurewebsites.net";
-const DESTINATIONS_ENDPOINT = `${API_BASE_URL}/api/get_destinations_AL`;
+const API_BASE_URL = "https://routepilot-recurring-api-awaphxaqf0hmexdp.eastus-01.azurewebsites.net";
+const DESTINATIONS_ENDPOINT = "https://dispatch.azurewebsites.net/api/get_destinations_AL";
 const RECURRING_ORDERS_ENDPOINT = `${API_BASE_URL}/api/recurring-orders-AL`;
 const GENERATED_HISTORY_ENDPOINT = `${API_BASE_URL}/api/recurring-orders-AL/history`;
 const IMPORT_ENDPOINT = `${API_BASE_URL}/api/recurring-orders-AL/import`;
